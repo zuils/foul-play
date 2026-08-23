@@ -1,0 +1,75 @@
+name: Autopullbot
+
+on:
+  push:
+    branches-ignore:
+      - main
+  workflow_dispatch:
+
+env:
+  SOURCE_REPO: https://github.com/pmariglia/foul-play.git
+  SOURCE_BRANCH: main
+  TARGET_BRANCH: merge
+
+jobs:
+  autopull:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pull Changes From External Repository
+        run: |
+          git config user.email "autopullbot@users.noreply.github.com"
+          git config user.name "Autopullbot"
+
+          # Add the external repository
+          git remote add upstream "$SOURCE_REPO"
+
+          # Fetch the branch from the external repository
+          git fetch upstream "$SOURCE_BRANCH"
+
+          # Switch to the branch in this repository that should receive the changes
+          git checkout "$TARGET_BRANCH"
+
+          # Merge the external branch
+          git merge "upstream/$SOURCE_BRANCH" --no-edit
+
+          # Push the updated target branch back to this repository
+          git push origin "$TARGET_BRANCH"
+
+      - name: Check If Branch Is Behind Main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Fetching main branch..."
+          git fetch origin main
+
+          BEHIND=$(git rev-list --count HEAD..origin/main)
+
+          echo "Branch is behind main by $BEHIND commits."
+
+          if [ "$BEHIND" -le 0 ]; then
+            echo "Branch is up to date with main."
+            exit 0
+          fi
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Creating pull request..."
+
+          gh pr create \
+            --title "Auto Pull Request - $TARGET_BRANCH" \
+            --body "Auto-generated PR to merge '$TARGET_BRANCH' into 'main'." \
+            --base main \
+            --head "$TARGET_BRANCH" \
+            --repo "${{ github.repository }}"
