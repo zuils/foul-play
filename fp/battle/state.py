@@ -358,9 +358,7 @@ class Battler:
         request_allows_z_moves = request_json[constants.ACTIVE][0].get(
             constants.CAN_Z_MOVE, False
         )
-        self.can_z_move = request_allows_z_moves and (
-            self.format_spec.gen_number == 7 or self.format_spec.national_dex
-        )
+        self.can_z_move = request_allows_z_moves
 
         # request JSON gives detailed information about the moves
         # available to the active pkmn. Take those as the source of truth
@@ -378,10 +376,8 @@ class Battler:
                 constants.DISABLED, False)
             self.active.moves[-1].current_pp = move.get(constants.PP, 1)
             self.active.moves[-1].can_z = bool(move.get(constants.ZMOVE))
-            self.can_z_move = self.can_z_move or (
-                bool(move.get(constants.ZMOVE))
-                and (self.format_spec.gen_number == 7 or self.format_spec.national_dex)
-            )
+            self.can_z_move = self.can_z_move or bool(
+                move.get(constants.ZMOVE))
 
             # PokemonShowdown disables these moves in the protocol after they are used once,
             # but poke-engine does not expect them to be disabled

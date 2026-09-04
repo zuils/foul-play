@@ -70,8 +70,10 @@ class TestBattleToPokeEngineState:
         assert not state.team_preview
 
         # sides are padded to 6 pokemon with fainted dummies
-        assert ["pikachu", "garchomp"] == [p.id for p in state.side_one.pokemon[:2]]
-        assert ["heatran", "tyranitar"] == [p.id for p in state.side_two.pokemon[:2]]
+        assert ["pikachu", "garchomp"] == [
+            p.id for p in state.side_one.pokemon[:2]]
+        assert ["heatran", "tyranitar"] == [
+            p.id for p in state.side_two.pokemon[:2]]
         assert 6 == len(state.side_one.pokemon)
         assert 6 == len(state.side_two.pokemon)
         assert all(0 == p.hp for p in state.side_one.pokemon[2:])
@@ -97,6 +99,21 @@ class TestBattleToPokeEngineState:
         assert "heatran" == state.side_one.pokemon[0].id
         assert "pikachu" == state.side_two.pokemon[0].id
 
+    def test_z_capability_reaches_engine_only_for_supported_formats(self):
+        battle = small_battle()
+        battle.pokemon_format = "gen7ou"
+        battle.user.can_z_move = True
+        assert battle_to_poke_engine_state(battle).side_one.allow_z_moves
+
+        battle.pokemon_format = "gen9ou"
+        assert not battle_to_poke_engine_state(battle).side_one.allow_z_moves
+
+    def test_consumed_z_resource_reaches_engine_state(self):
+        battle = small_battle()
+        battle.pokemon_format = "gen7ou"
+        battle.user.z_move_used = True
+        assert battle_to_poke_engine_state(battle).side_one.z_move_used
+
 
 class TestStringMappings:
     def test_weather_strings(self):
@@ -105,7 +122,8 @@ class TestStringMappings:
         assert "sand" == get_weather_string(constants.Weather.SAND)
         assert "hail" == get_weather_string(constants.Weather.HAIL)
         assert "snow" == get_weather_string(constants.Weather.SNOW)
-        assert "harshsun" == get_weather_string(constants.Weather.DESOLATE_LAND)
+        assert "harshsun" == get_weather_string(
+            constants.Weather.DESOLATE_LAND)
         assert "heavyrain" == get_weather_string(constants.Weather.HEAVY_RAIN)
         assert "none" == get_weather_string(None)
         assert "none" == get_weather_string("none")
@@ -113,10 +131,12 @@ class TestStringMappings:
             get_weather_string("acidrain")
 
     def test_terrain_strings(self):
-        assert "electricterrain" == get_terrain_string(constants.Terrain.ELECTRIC)
+        assert "electricterrain" == get_terrain_string(
+            constants.Terrain.ELECTRIC)
         assert "grassyterrain" == get_terrain_string(constants.Terrain.GRASSY)
         assert "mistyterrain" == get_terrain_string(constants.Terrain.MISTY)
-        assert "psychicterrain" == get_terrain_string(constants.Terrain.PSYCHIC)
+        assert "psychicterrain" == get_terrain_string(
+            constants.Terrain.PSYCHIC)
         assert "none" == get_terrain_string(None)
         assert "none" == get_terrain_string("none")
         with pytest.raises(ValueError):
@@ -160,7 +180,8 @@ class TestReplaceLastUsedMove:
         self.battler.active.add_move("return102")
         self.battler.last_used_move = LastUsedMove("pikachu", "return", 5)
         replace_return_last_used_move(self.battler)
-        assert LastUsedMove("pikachu", "return102", 5) == self.battler.last_used_move
+        assert LastUsedMove("pikachu", "return102",
+                            5) == self.battler.last_used_move
 
     def test_return_falls_back_to_a_switch_when_no_move_matches(self):
         self.battler.active.add_move("thunderbolt")
@@ -173,7 +194,8 @@ class TestReplaceLastUsedMove:
 
 class TestPokemonToPokeEnginePkmn:
     def test_moves_are_padded_to_four(self):
-        pkmn = real_pkmn("pikachu", 100, "static", "lightball", ["thunderbolt", "surf"])
+        pkmn = real_pkmn("pikachu", 100, "static",
+                         "lightball", ["thunderbolt", "surf"])
         engine_pkmn = pokemon_to_poke_engine_pkmn(pkmn)
         assert ["thunderbolt", "surf", "none", "none"] == [
             m.id for m in engine_pkmn.moves
@@ -197,13 +219,15 @@ class TestPokemonToPokeEnginePkmn:
         assert 4 == len(pkmn.moves)
 
     def test_single_typed_pkmn_gets_typeless_second_type(self):
-        pkmn = real_pkmn("pikachu", 100, "static", "lightball", ["thunderbolt"])
+        pkmn = real_pkmn("pikachu", 100, "static",
+                         "lightball", ["thunderbolt"])
         engine_pkmn = pokemon_to_poke_engine_pkmn(pkmn)
         assert ("electric", "typeless") == engine_pkmn.types
         assert ("electric", "typeless") == engine_pkmn.base_types
 
     def test_knocked_off_item_becomes_none_string(self):
-        pkmn = real_pkmn("pikachu", 100, "static", "lightball", ["thunderbolt"])
+        pkmn = real_pkmn("pikachu", 100, "static",
+                         "lightball", ["thunderbolt"])
         pkmn.knocked_off = True
         engine_pkmn = pokemon_to_poke_engine_pkmn(pkmn)
         assert "None" == engine_pkmn.item

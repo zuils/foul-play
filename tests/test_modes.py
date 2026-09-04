@@ -31,7 +31,8 @@ class TestFormatDecision:
         self.battle.user.reserve = [reserve_pkmn]
 
     def test_switch_decision_uses_reserve_pkmn_index(self):
-        assert ["/switch 3", "7"] == format_decision(self.battle, "switch weedle")
+        assert ["/switch 3",
+                "7"] == format_decision(self.battle, "switch weedle")
 
     def test_switch_to_pkmn_not_in_reserve_raises(self):
         with pytest.raises(ValueError):
@@ -89,6 +90,11 @@ class TestFormatDecision:
             self.battle, "thunderbolt"
         )
 
+    def test_explicit_zmove_decision_is_serialized_as_zmove(self):
+        assert ["/choose move thunderbolt zmove", "7"] == format_decision(
+            self.battle, "thunderbolt-z"
+        )
+
     def test_dynamax_comes_before_terastallize_when_both_apply(self):
         self.battle.user.active.can_dynamax = True
         self.battle.user.reserve[0].hp = 0
@@ -132,7 +138,8 @@ class TestExtractBattleFactoryTierFromMsg:
     def test_message_without_tier_marker_returns_empty_string(self):
         # find() returning -1 makes the slice start at len("Battle Factory Tier: ")
         # rather than raising; for a short message this produces an empty string
-        assert "" == extract_battle_factory_tier_from_msg("no tier marker here")
+        assert "" == extract_battle_factory_tier_from_msg(
+            "no tier marker here")
 
 
 class TestRandomBattleSearchParams:
@@ -212,9 +219,12 @@ class TestStandardBattleSearchParams:
 
 class TestModeRegistry:
     def test_battle_mode_returns_the_right_mode_for_each_battle_type(self):
-        assert isinstance(battle_mode(BattleType.RANDOM_BATTLE), RandomBattleMode)
-        assert isinstance(battle_mode(BattleType.STANDARD_BATTLE), StandardBattleMode)
-        assert isinstance(battle_mode(BattleType.BATTLE_FACTORY), BattleFactoryMode)
+        assert isinstance(battle_mode(
+            BattleType.RANDOM_BATTLE), RandomBattleMode)
+        assert isinstance(battle_mode(
+            BattleType.STANDARD_BATTLE), StandardBattleMode)
+        assert isinstance(battle_mode(
+            BattleType.BATTLE_FACTORY), BattleFactoryMode)
         assert isinstance(battle_mode(BattleType.BSS), BSSMode)
 
     def test_battle_modes_are_module_level_singletons(self):
