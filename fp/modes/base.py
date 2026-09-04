@@ -4,6 +4,7 @@ import json
 import logging
 import random
 from copy import copy, deepcopy
+from typing import List
 
 from fp import constants
 from fp.battle.state import Battle, Battler, LastUsedMove, Pokemon
@@ -200,6 +201,15 @@ def format_decision(battle, decision):
             message = "{} {}".format(message, constants.ZMOVE)
 
     return [message, str(battle.rqid)]
+
+
+async def select_move(self, battle) -> List[str]:
+        """Select a move for the given battle.
+
+        Default implementation uses the existing async_pick_move function.
+        Modes can override this to provide custom move selection logic.
+        """
+        return await async_pick_move(battle)
 
 
 async def async_pick_move(battle):

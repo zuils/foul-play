@@ -20,7 +20,11 @@ def battle_is_finished(battle_tag, msg):
 
 async def start_battle(ps_websocket_client, pokemon_battle_type, team_dict):
     format_spec = FormatSpec.from_format_string(pokemon_battle_type)
-    battle = await battle_mode(format_spec.battle_type).start_battle(
+    battle = await battle_mode(
+        BattleType.STRATAGEM
+        if FoulPlayConfig.use_stratagem
+        else format_spec.battle_type
+    ).start_battle(
         ps_websocket_client, pokemon_battle_type, team_dict
     )
 
@@ -59,5 +63,5 @@ async def pokemon_battle(ps_websocket_client, pokemon_battle_type, team_dict):
         else:
             action_required = await async_update_battle(battle, msg)
             if action_required and not battle.wait:
-                best_move = await async_pick_move(battle)
+                best_move = await battle.mode.select_move(battle)
                 await ps_websocket_client.send_message(battle.battle_tag, best_move)

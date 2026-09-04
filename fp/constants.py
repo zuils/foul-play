@@ -6,6 +6,7 @@ class BattleType(StrEnum):
     BATTLE_FACTORY = "battle_factory"
     RANDOM_BATTLE = "random_battle"
     BSS = "bss"
+    STRATAGEM = "stratagem"
 
 
 START_STRING = "|start"

@@ -3,6 +3,7 @@ import logging
 from copy import deepcopy
 
 from fp.config import FoulPlayConfig, init_logging, BotModes
+from fp.constants import BattleType
 
 from fp.modes import battle_mode
 from fp.teams import load_team, TeamListIterator
@@ -40,8 +41,8 @@ def check_dictionaries_are_unmodified(original_pokedex, original_move_json):
         logger.debug("Pokedex JSON unmodified!")
 
 
-async def run_foul_play():
-    FoulPlayConfig.configure()
+async def run_foul_play(argv=None):
+    FoulPlayConfig.configure(argv)
     init_logging(FoulPlayConfig.log_level, FoulPlayConfig.log_to_file)
     apply_mods(FoulPlayConfig.format_spec)
 
@@ -67,7 +68,11 @@ async def run_foul_play():
     losses = 0
     team_file_name = "None"
     team_dict = None
-    mode = battle_mode(FoulPlayConfig.format_spec.battle_type)
+    mode = battle_mode(
+        BattleType.STRATAGEM
+        if FoulPlayConfig.use_stratagem
+        else FoulPlayConfig.format_spec.battle_type
+    )
     while True:
         if mode.requires_team:
             team_name = (

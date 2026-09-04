@@ -87,10 +87,11 @@ class _FoulPlayConfig:
     room_name: str
     log_level: str
     log_to_file: bool
+    use_stratagem: bool = False
     stdout_log_handler: logging.StreamHandler
     file_log_handler: Optional[CustomRotatingFileHandler]
 
-    def configure(self):
+    def configure(self, argv=None):
         parser = argparse.ArgumentParser()
         parser.add_argument(
             "--websocket-uri",
@@ -181,8 +182,43 @@ class _FoulPlayConfig:
             action="store_true",
             help="When enabled, DEBUG logs will be written to a file in the logs/ directory",
         )
+        # Stratagem-specific arguments
+        parser.add_argument(
+            "--stratagem-worlds",
+            type=int,
+            default=32,
+            help="Number of worlds to sample per decision (default: 32)"
+        )
+        parser.add_argument(
+            "--stratagem-search-time",
+            type=int,
+            default=150,
+            help="Search time per world in milliseconds (default: 150)"
+        )
+        parser.add_argument(
+            "--stratagem-prediction-horizon",
+            type=int,
+            default=3,
+            help="Prediction horizon for opponent moves (default: 3)"
+        )
+        parser.add_argument(
+            "--stratagem-temperature",
+            type=float,
+            default=1.0,
+            help="Temperature for action selection (default: 1.0)"
+        )
+        parser.add_argument(
+            "--stratagem",
+            action="store_true",
+            help="Use Stratagem action selection for this Foul Play session",
+        )
+        parser.add_argument(
+            "--stratagem-weights",
+            default=None,
+            help="Path to a compatible Stratagem trainer checkpoint",
+        )
 
-        args = parser.parse_args()
+        args = parser.parse_args(argv)
         self.websocket_uri = self.get_websocket(args.websocket_uri)
         self.username = args.ps_username
         self.password = args.ps_password
@@ -207,6 +243,17 @@ class _FoulPlayConfig:
         self.room_name = args.room_name
         self.log_level = args.log_level
         self.log_to_file = args.log_to_file
+        self.use_stratagem = args.stratagem
+
+        # Update Stratagem configuration from command line arguments
+        from fp.stratagem.config import update_config
+        update_config(
+            world_count=args.stratagem_worlds,
+            search_time_ms=args.stratagem_search_time,
+            prediction_horizon=args.stratagem_prediction_horizon,
+            temperature=args.stratagem_temperature,
+            weights_path=args.stratagem_weights,
+        )
 
         self.validate_config()
 

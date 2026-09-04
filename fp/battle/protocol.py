@@ -1614,6 +1614,14 @@ def immune(battle, split_msg):
     expected_damage_rolls, _ = poke_engine_get_damage_rolls(
         deepcopy(battle), battle.user.last_used_move.move, "none", True
     )
+    attacking_move_type = None
+    if battle.user.last_used_move.move in all_move_json:
+        attacking_move_type = all_move_json[battle.user.last_used_move.move][constants.TYPE]
+    if (
+        battle.user.last_used_move.move == "judgment"
+        and battle.user.active.name.startswith("arceus")
+    ):
+        attacking_move_type = battle.user.active.types[0]
 
     # Zoroark checks
     if (
@@ -1623,7 +1631,7 @@ def immune(battle, split_msg):
         and all_move_json[battle.user.last_used_move.move][constants.CATEGORY]
         != constants.MoveCategory.STATUS
         and type_effectiveness_modifier(
-            all_move_json[battle.user.last_used_move.move][constants.TYPE],
+            attacking_move_type,
             side.active.types,
         )
         != 0
@@ -1633,7 +1641,7 @@ def immune(battle, split_msg):
         and not (
             side.active.terastallized
             and type_effectiveness_modifier(
-                all_move_json[battle.user.last_used_move.move][constants.TYPE],
+                attacking_move_type,
                 [side.active.tera_type],
             )
             == 0
