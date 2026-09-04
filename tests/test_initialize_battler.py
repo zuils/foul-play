@@ -104,6 +104,73 @@ class TestUpdateFromRequestJson:
             Move("nastyplot"),
         ]
 
+    @pytest.mark.parametrize("zmove_index", range(4))
+    def test_can_z_move_array_is_preserved_per_move_slot(self, zmove_index):
+        self.battler.pokemon_format = "gen7ou"
+        self.battler.active = Pokemon("pikachu", 100)
+        moves = [
+            {
+                "move": "Thunderbolt",
+                "id": "thunderbolt",
+                "pp": 10,
+                "maxpp": 10,
+                "target": "normal",
+                "disabled": False,
+            }
+            for _ in range(4)
+        ]
+        request_dict = {
+            "active": [{"moves": moves, "canZMove": [i == zmove_index for i in range(4)]}],
+            "side": {
+                "pokemon": [{
+                    "ident": "p1: Pikachu",
+                    "details": "Pikachu, L100",
+                    "condition": "100/100",
+                    "active": True,
+                    "stats": {"atk": 100, "def": 100, "spa": 100, "spd": 100, "spe": 100},
+                    "moves": ["thunderbolt"] * 4,
+                    "baseAbility": "static",
+                    "ability": "static",
+                    "item": "normaliumz",
+                }],
+            },
+        }
+
+        self.battler.update_from_request_json(request_dict)
+
+        assert [move.can_z for move in self.battler.active.moves] == [
+            i == zmove_index for i in range(4)
+        ]
+
+    def test_missing_can_z_move_array_does_not_crash(self):
+        self.battler.pokemon_format = "gen7ou"
+        self.battler.active = Pokemon("pikachu", 100)
+        request_dict = {
+            "active": [{"moves": [{
+                "move": "Thunderbolt",
+                "id": "thunderbolt",
+                "pp": 10,
+                "maxpp": 10,
+                "target": "normal",
+                "disabled": False,
+            }]}],
+            "side": {"pokemon": [{
+                "ident": "p1: Pikachu",
+                "details": "Pikachu, L100",
+                "condition": "100/100",
+                "active": True,
+                "stats": {"atk": 100, "def": 100, "spa": 100, "spd": 100, "spe": 100},
+                "moves": ["thunderbolt"],
+                "baseAbility": "static",
+                "ability": "static",
+                "item": "normaliumz",
+            }]},
+        }
+
+        self.battler.update_from_request_json(request_dict)
+
+        assert not self.battler.active.moves[0].can_z
+
     def test_gigatonhammer_un_disabled_if_it_is_last_used_move(self):
         request_dict = {
             "active": [

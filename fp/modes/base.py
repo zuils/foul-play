@@ -57,14 +57,16 @@ class BattleMode:
     ):
         battler = battle.opponent
         if battler.mega_revealed():
-            logger.info("Mega evolution already revealed for {}".format(battler.name))
+            logger.info(
+                "Mega evolution already revealed for {}".format(battler.name))
             return
 
         mega_formes_to_select_from = self.opponent_possible_mega_evolutions(
             battle, smogon_sets
         )
         if not mega_formes_to_select_from:
-            logger.info("No possible mega evolutions for {}".format(battler.name))
+            logger.info(
+                "No possible mega evolutions for {}".format(battler.name))
             return
 
         # Sample every mega in BSS team preview because we are in a bring 6 pick 3 scenario
@@ -169,12 +171,16 @@ def format_decision(battle, decision):
     else:
         tera = False
         mega = False
+        zmove = False
         if decision.endswith("-tera"):
             decision = decision.replace("-tera", "")
             tera = True
         elif decision.endswith("-mega"):
             decision = decision.replace("-mega", "")
             mega = True
+        elif decision.endswith("-z"):
+            decision = decision.removesuffix("-z")
+            zmove = True
         message = "/choose move {}".format(decision)
 
         if battle.user.active.can_mega_evo and mega:
@@ -191,7 +197,7 @@ def format_decision(battle, decision):
         if tera:
             message = "{} {}".format(message, constants.TERASTALLIZE)
 
-        if battle.user.active.get_move(decision).can_z:
+        if zmove or battle.user.active.get_move(decision).can_z:
             message = "{} {}".format(message, constants.ZMOVE)
 
     return [message, str(battle.rqid)]
@@ -216,9 +222,13 @@ async def async_pick_move(battle):
         best_move = await loop.run_in_executor(pool, find_best_move, battle_copy)
     battle.user.last_selected_move = LastUsedMove(
         battle.user.active.name,
-        best_move.removesuffix("-tera").removesuffix("-mega"),
+        best_move.removesuffix(
+            "-tera").removesuffix("-mega").removesuffix("-z"),
         battle.turn,
     )
+    if best_move.endswith("-z"):
+        battle.user.z_move_used = True
+        battle.user.can_z_move = False
     return format_decision(battle_copy, best_move)
 
 
@@ -243,7 +253,8 @@ async def handle_team_preview(battle, ps_websocket_client):
     team_list_indexes.remove(choice_digit)
     message = [
         "/team {}{}|{}".format(
-            choice_digit, "".join(str(x) for x in team_list_indexes), battle.rqid
+            choice_digit, "".join(str(x)
+                                  for x in team_list_indexes), battle.rqid
         )
     ]
 
@@ -261,7 +272,8 @@ async def get_battle_tag_and_opponent(ps_websocket_client: PSWebsocketClient):
             opponent_name = (
                 split_msg[4].replace(user_name, "").replace("vs.", "").strip()
             )
-            logger.info("Initialized {} against: {}".format(battle_tag, opponent_name))
+            logger.info("Initialized {} against: {}".format(
+                battle_tag, opponent_name))
             return battle_tag, opponent_name
 
 

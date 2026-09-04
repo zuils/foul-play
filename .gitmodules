@@ -1,0 +1,3 @@
+[submodule "poke-engine"]
+	path = poke-engine
+	url = git@github-poke:zuils/poke-engine.git

@@ -110,7 +110,10 @@ def get_dummy_poke_engine_pkmn():
 
 
 def battler_to_poke_engine_side(
-    battler: Battler, force_switch=False, stayed_in_on_switchout_move=False
+    battler: Battler,
+    force_switch=False,
+    stayed_in_on_switchout_move=False,
+    allow_z_moves=False,
 ):
     num_reserves = len(battler.reserve)
     last_used_move = "move:none"
@@ -120,7 +123,6 @@ def battler_to_poke_engine_side(
         pkmn_moves = [m.name for m in battler.active.moves]
         for i, move in enumerate(pkmn_moves):
             if move == battler.last_used_move.move:
-                last_used_move = "move:{}".format(i)
                 break
         else:
             last_used_move = "move:0"
@@ -162,6 +164,8 @@ def battler_to_poke_engine_side(
 
     side = PokeEngineSide(
         active_index="0",
+        allow_z_moves=allow_z_moves,
+        z_move_used=battler.z_move_used,
         baton_passing=battler.baton_passing,
         shed_tailing=battler.shed_tailing,
         pokemon=[pokemon_to_poke_engine_pkmn(battler.active)]
@@ -210,7 +214,8 @@ def battler_to_poke_engine_side(
         accuracy_boost=0,
         evasion_boost=0,
         last_used_move=last_used_move,
-        switch_out_move_second_saved_move="NONE",  # always none because we can't know this
+        # always none because we can't know this
+        switch_out_move_second_saved_move="NONE",
     )
 
     while num_reserves < 5:
@@ -317,10 +322,20 @@ def battle_to_poke_engine_state(battle: Battle, swap=False):
         replace_return_last_used_move(battle.user)
 
     side_one = battler_to_poke_engine_side(
-        battle.user, force_switch=battle.force_switch
+        battle.user,
+        force_switch=battle.force_switch,
+        allow_z_moves=(
+            battle.user.can_z_move
+            and (battle.format_spec.gen_number == 7 or battle.format_spec.national_dex)
+        ),
     )
     side_two = battler_to_poke_engine_side(
-        battle.opponent, stayed_in_on_switchout_move=opponent_switchout_move_stayed_in
+        battle.opponent,
+        stayed_in_on_switchout_move=opponent_switchout_move_stayed_in,
+        allow_z_moves=(
+            battle.opponent.can_z_move
+            and (battle.format_spec.gen_number == 7 or battle.format_spec.national_dex)
+        ),
     )
 
     if swap:

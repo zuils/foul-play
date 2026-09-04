@@ -147,7 +147,8 @@ class Battle:
         return self.gen.megas_exist or self.format_spec.national_dex
 
     def get_effective_speed(self, battler):
-        boosted_speed = battler.active.calculate_boosted_stats()[constants.SPEED]
+        boosted_speed = battler.active.calculate_boosted_stats()[
+            constants.SPEED]
 
         if (
             self.weather == constants.Weather.SUN
@@ -216,6 +217,8 @@ class Battler:
         self.shed_tailing = False
         self.wish = (0, 0)
         self.future_sight = (0, "")
+        self.can_z_move = False
+        self.z_move_used = False
 
         self.account_name = None
 
@@ -270,7 +273,8 @@ class Battler:
 
     def find_reserve_pkmn_by_unknown_forme(self, pkmn_name):
         for reserve_pkmn in filter(lambda x: x.unknown_forme, self.reserve):
-            pkmn_base_forme = normalize_name(pokedex[pkmn_name].get("changesFrom", ""))
+            pkmn_base_forme = normalize_name(
+                pokedex[pkmn_name].get("changesFrom", ""))
             if pkmn_base_forme == reserve_pkmn.base_name:
                 return reserve_pkmn
         return None
@@ -351,6 +355,10 @@ class Battler:
         self.active.can_terastallize = request_json[constants.ACTIVE][0].get(
             constants.CAN_TERASTALLIZE, False
         )
+        request_allows_z_moves = request_json[constants.ACTIVE][0].get(
+            constants.CAN_Z_MOVE, False
+        )
+        self.can_z_move = request_allows_z_moves
 
         # request JSON gives detailed information about the moves
         # available to the active pkmn. Take those as the source of truth
@@ -364,8 +372,12 @@ class Battler:
                 self.active.add_move(normalize_name(move["move"]))
             else:
                 self.active.add_move(move[constants.ID])
-            self.active.moves[-1].disabled = move.get(constants.DISABLED, False)
+            self.active.moves[-1].disabled = move.get(
+                constants.DISABLED, False)
             self.active.moves[-1].current_pp = move.get(constants.PP, 1)
+            self.active.moves[-1].can_z = bool(move.get(constants.ZMOVE))
+            self.can_z_move = self.can_z_move or bool(
+                move.get(constants.ZMOVE))
 
             # PokemonShowdown disables these moves in the protocol after they are used once,
             # but poke-engine does not expect them to be disabled
@@ -379,7 +391,7 @@ class Battler:
                 self.active.moves[index].can_z = request_json[constants.ACTIVE][0][
                     constants.CAN_Z_MOVE
                 ][index]
-            except KeyError:
+            except (KeyError, IndexError, TypeError):
                 pass
 
     def update_from_request_json(self, request_json):
@@ -388,7 +400,8 @@ class Battler:
         This should be called with a cloned battle/battler so that the original is not modified
         """
         try:
-            trapped = request_json[constants.ACTIVE][0].get(constants.TRAPPED, False)
+            trapped = request_json[constants.ACTIVE][0].get(
+                constants.TRAPPED, False)
             maybe_trapped = request_json[constants.ACTIVE][0].get(
                 constants.MAYBE_TRAPPED, False
             )
@@ -414,7 +427,8 @@ class Battler:
                     )
 
                 if constants.ACTIVE in request_json:
-                    self._initialize_user_active_from_request_json(request_json)
+                    self._initialize_user_active_from_request_json(
+                        request_json)
 
                 pkmn = self.active
             else:
@@ -445,7 +459,8 @@ class Battler:
         Re-initializes the active pokemon based on the last request JSON that was received
         This is useful when the bot's active pkmn has mega-evolved. We need to get the new stats/hp
         """
-        pokedex_name = normalize_name(pokedex[self.active.name][constants.NAME])
+        pokedex_name = normalize_name(
+            pokedex[self.active.name][constants.NAME])
         request_json_active_pkmn = [
             p
             for p in request_json["side"]["pokemon"]
@@ -478,7 +493,8 @@ class Battler:
         This function differs in that it adds new pokemon to the Side rather than modifying existing ones
         """
         try:
-            trapped = request_json[constants.ACTIVE][0].get(constants.TRAPPED, False)
+            trapped = request_json[constants.ACTIVE][0].get(
+                constants.TRAPPED, False)
             maybe_trapped = request_json[constants.ACTIVE][0].get(
                 constants.MAYBE_TRAPPED, False
             )
@@ -571,7 +587,8 @@ class Battler:
                         p for p in self.team_dict if p["species"] == other_forme_in_team
                     )
                 else:
-                    raise ValueError("Could not find {} in team_dict".format(pkmn.name))
+                    raise ValueError(
+                        "Could not find {} in team_dict".format(pkmn.name))
                 pkmn.nature = team_dict_pkmn["nature"] or "serious"
                 pkmn.evs = (
                     int(team_dict_pkmn["evs"]["hp"] or 0),
@@ -727,7 +744,8 @@ class Pokemon:
     @classmethod
     def from_switch_string(cls, switch_string, nickname=None):
         if nickname is not None:
-            nickname = cls.extract_nickname_from_pokemonshowdown_string(nickname)
+            nickname = cls.extract_nickname_from_pokemonshowdown_string(
+                nickname)
 
         details = switch_string.split(",")
         name = details[0]
@@ -814,7 +832,8 @@ class Move:
         if move_json[constants.PP] == 1:
             self.max_pp = 1
         else:
-            self.max_pp = current_generation_mechanics().max_pp(move_json[constants.PP])
+            self.max_pp = current_generation_mechanics().max_pp(
+                move_json[constants.PP])
 
         self.disabled = False
         self.can_z = False
