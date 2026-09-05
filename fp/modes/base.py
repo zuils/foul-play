@@ -208,6 +208,8 @@ async def async_pick_move(battle):
     battle_copy = deepcopy(battle)
     if not battle_copy.team_preview:
         battle_copy.user.update_from_request_json(battle_copy.request_json)
+        
+    battle_copy.user.lock_moves()
 
     loop = asyncio.get_event_loop()
     with concurrent.futures.ThreadPoolExecutor() as pool:

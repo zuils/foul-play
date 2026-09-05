@@ -6,6 +6,7 @@ from collections import defaultdict
 
 from fp import constants
 from fp.format_spec import FormatSpec
+from fp.modes import base
 from fp.modes.battle_factory import BattleFactoryMode
 from fp.modes.random_battle import RandomBattleMode
 from fp.modes.standard_battle import StandardBattleMode
@@ -7338,3 +7339,83 @@ class TestAsyncUpdateBattle:
 
         assert True is result
         assert 2 == self.battle.rqid
+        
+    def test_picks_fake_out_after_acted(self, monkeypatch):
+        battle = Battle(None)
+        battle.rqid = 2
+        battle.turn = 2
+
+        battle.user.active = Pokemon("pikachu", 100)
+        battle.user.active.add_move("fakeout")
+        battle.user.active.add_move("tackle")
+        battle.user.last_used_move = LastUsedMove(
+            pokemon_name="pikachu",
+            move="tackle",
+            turn=1,
+        )
+
+        # Simulate a fresh Showdown request. Fake Out is still reported as
+        # enabled by the request, so async_pick_move must apply Foul Play's
+        # first-turn move lock before passing the state to the search.
+        battle.request_json = {
+            "active": [
+                {
+                    "moves": [
+                        {
+                            "move": "Fake Out",
+                            "id": "fakeout",
+                            "pp": 16,
+                            "maxpp": 16,
+                            "target": "normal",
+                            "disabled": False,
+                        },
+                        {
+                            "move": "Tackle",
+                            "id": "tackle",
+                            "pp": 35,
+                            "maxpp": 35,
+                            "target": "normal",
+                            "disabled": False,
+                        },
+                    ]
+                }
+            ],
+            "side": {
+                "name": "Test",
+                "id": "p1",
+                "pokemon": [
+                    {
+                        "ident": "p1: Pikachu",
+                        "details": "Pikachu, L100",
+                        "condition": "100/100",
+                        "active": True,
+                        "stats": {
+                            "atk": 100,
+                            "def": 100,
+                            "spa": 100,
+                            "spd": 100,
+                            "spe": 100,
+                        },
+                        "moves": ["fakeout", "tackle"],
+                        "baseAbility": "static",
+                        "item": "",
+                        "pokeball": "pokeball",
+                        "ability": "static",
+                    }
+                ],
+            },
+        }
+
+        observed = {}
+
+        def fake_find_best_move(battle_copy):
+            observed["fakeout_disabled"] = (
+                battle_copy.user.active.get_move("fakeout").disabled
+            )
+            return "tackle"
+
+        monkeypatch.setattr(base, "find_best_move", fake_find_best_move)
+
+        asyncio.run(base.async_pick_move(battle))
+
+        assert observed["fakeout_disabled"]
