@@ -1,6 +1,6 @@
 logs/
 .venv/
-venv/
+.vscode/
 dist/
 .idea/
 **/actual_states/*
