@@ -466,9 +466,8 @@ class Battler:
         request_json_active_pkmn = [
             p
             for p in request_json["side"]["pokemon"]
-            if normalize_name(p[constants.DETAILS]).split(",")[0] == pokedex_name
-            or normalize_name(p[constants.DETAILS]).split(",")[0]
-            == self.active.base_name
+            if normalize_name(p[constants.DETAILS].split(",")[0]) == pokedex_name
+            or normalize_name(p[constants.DETAILS].split(",")[0]) == self.active.base_name
         ]
         if pokedex_name == "terapagosstellar" and len(request_json_active_pkmn) == 0:
             request_json_active_pkmn = [
