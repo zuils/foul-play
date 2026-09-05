@@ -1,13 +1,93 @@
 import random
 
-from fp.battle.state import Battle, Pokemon
+import pytest
+
+from fp.battle.state import Battle, Move, Pokemon
 from fp.config import FoulPlayConfig
-from fp.data.sets import MOVES_STRING, PokemonSet
+from fp.data import all_move_json
+from fp.data.sets import MOVES_STRING, PokemonSet, SmogonSets
 from fp.modes.standard_battle import StandardBattleMode
 from fp.search.poke_engine_helpers import battle_to_poke_engine_state
 from fp.search.standard_battles import _sample_pokemon
 
 from poke_engine import monte_carlo_tree_search
+
+
+Z_CRYSTAL_COMPATIBLE_MOVES = [
+    ("Normalium Z", "tackle"),
+    ("Fightinium Z", "karatechop"),
+    ("Flyinium Z", "gust"),
+    ("Poisonium Z", "poisonjab"),
+    ("Groundium Z", "earthquake"),
+    ("Rockium Z", "stoneedge"),
+    ("Buginium Z", "bugbuzz"),
+    ("Ghostium Z", "shadowball"),
+    ("Steelium Z", "ironhead"),
+    ("Firium Z", "fireblast"),
+    ("Waterium Z", "surf"),
+    ("Grassium Z", "leafstorm"),
+    ("Electrium Z", "thunderbolt"),
+    ("Psychium Z", "psychic"),
+    ("Icium Z", "icebeam"),
+    ("Dragonium Z", "dragonclaw"),
+    ("Darkinium Z", "darkpulse"),
+    ("Fairium Z", "moonblast"),
+    ("Pikanium Z", "volttackle"),
+    ("Decidium Z", "spiritshackle"),
+    ("Incinium Z", "darkestlariat"),
+    ("Primarium Z", "sparklingaria"),
+    ("Tapunium Z", "naturesmadness"),
+    ("Marshadium Z", "spectralthief"),
+    ("Aloraichium Z", "thunderbolt"),
+    ("Snorlium Z", "gigaimpact"),
+    ("Eevium Z", "lastresort"),
+    ("Mewnium Z", "psychic"),
+    ("Pikashunium Z", "thunderbolt"),
+    ("Ultranecrozium Z", "photongeyser"),
+    ("Solganium Z", "sunsteelstrike"),
+    ("Lunalium Z", "moongeistbeam"),
+    ("Mimikium Z", "playrough"),
+    ("Lycanium Z", "stoneedge"),
+    ("Kommonium Z", "clangingscales"),
+]
+
+Z_MOVE_IDS = [
+    "breakneckblitz",
+    "alloutpummeling",
+    "supersonicskystrike",
+    "aciddownpour",
+    "tectonicrage",
+    "continentalcrush",
+    "savagespinout",
+    "neverendingnightmare",
+    "corkscrewcrash",
+    "infernooverdrive",
+    "hydrovortex",
+    "bloomdoom",
+    "gigavolthavoc",
+    "shatteredpsyche",
+    "subzeroslammer",
+    "devastatingdrake",
+    "blackholeeclipse",
+    "twinkletackle",
+    "catastropika",
+    "sinisterarrowraid",
+    "maliciousmoonsault",
+    "oceanicoperetta",
+    "guardianofalola",
+    "soulstealing7starstrike",
+    "stokedsparksurfer",
+    "pulverizingpancake",
+    "genesissupernova",
+    "extremeevoboost",
+    "10000000voltthunderbolt",
+    "lightthatburnsthesky",
+    "searingsunrazesmash",
+    "menacingmoonrazemaelstrom",
+    "letssnuggleforever",
+    "splinteredstormshards",
+    "clangoroussoulblaze",
+]
 
 
 def concrete_world(opponent_item, opponent_moves):
@@ -67,6 +147,15 @@ def opponent_actions(battle):
     return {option.move_choice for option in result.side_two}
 
 
+def test_all_z_move_records_load_through_foul_play_move_parser():
+    assert len(Z_MOVE_IDS) == 35
+    for move_id in Z_MOVE_IDS:
+        move_data = all_move_json[move_id]
+        assert move_data["id"] == move_id
+        assert move_data["pp"] == 1
+        assert Move(move_data["name"]).name == move_id
+
+
 def test_concrete_world_without_z_crystal_has_no_z_action():
     actions = opponent_actions(concrete_world("leftovers", ["surf"]))
 
@@ -110,3 +199,33 @@ def test_smogon_trait_and_move_sampling_keeps_z_action_world_specific():
     assert [move.name for move in z_opponent.moves] == ["surf"]
     assert "surf-z" not in opponent_actions(non_z_world)
     assert "surf-z" in opponent_actions(z_world)
+
+
+@pytest.mark.parametrize("raw_item, compatible_move", Z_CRYSTAL_COMPATIBLE_MOVES)
+def test_smogon_z_crystal_labels_are_normalized_and_generate_z_actions(
+    monkeypatch, raw_item, compatible_move
+):
+    smogon_sets = SmogonSets()
+    raw_smogon_data = {
+        "Volcarona": {
+            "Raw count": 1,
+            "Teammates": {},
+            "Checks and Counters": {},
+            "Spreads": {"Timid:0/0/0/252/4/252": 1},
+            "Items": {raw_item: 1},
+            "Moves": {"Bug Buzz": 1},
+            "Abilities": {"Flame Body": 1},
+            "Tera Types": {"nothing": 1},
+        }
+    }
+    monkeypatch.setattr(
+        smogon_sets, "_get_smogon_stats_json", lambda _url: raw_smogon_data
+    )
+
+    parsed = smogon_sets._get_pokemon_information("test", {"volcarona"})
+    normalized_item = parsed["volcarona"]["items"][0][0]
+
+    assert normalized_item == raw_item.replace(" ", "").lower()
+    assert f"{compatible_move}-z" in opponent_actions(
+        concrete_world(normalized_item, [compatible_move])
+    )

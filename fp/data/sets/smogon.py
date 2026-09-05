@@ -144,7 +144,7 @@ class SmogonSets(PokemonSets):
 
             for item, count in pkmn_information["Items"].items():
                 if count > 0:
-                    items.append((item, count / total_count))
+                    items.append((normalize_name(item), count / total_count))
 
             for move, count in pkmn_information["Moves"].items():
                 if count > 0 and move and move.lower() != "nothing":

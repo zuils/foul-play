@@ -73,6 +73,7 @@ def normalize_name(name):
         .replace("-", "")
         .replace(".", "")
         .replace("'", "")
+        .replace(",", "")
         .replace("%", "")
         .replace("*", "")
         .replace(":", "")
