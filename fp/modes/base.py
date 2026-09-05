@@ -39,14 +39,16 @@ class BattleMode:
     def opponent_possible_mega_evolutions(
         self, battle: Battle, smogon_sets: SmogonSets
     ) -> list:
-        mega_formes = battle.opponent.possible_mega_evolutions()
+        mega_formes = battle.opponent.possible_mega_evolutions(battle.format_spec.mega_availability)
         mega_formes_to_select_from = []
         for pkmn, possible_mega_evos in mega_formes.items():
             for mega_info in possible_mega_evos:
+                count = smogon_sets.get_raw_count(mega_info[0])
+                logger.error(f"MEGA LOOKUP: {pkmn} -> {mega_info[0]} = {count!r}")
+        
                 if not smogon_sets.mega_lower_usage_than_non_mega(pkmn, mega_info[0]):
-                    mega_usage_rate = smogon_sets.get_raw_count(mega_info[0])
                     mega_formes_to_select_from.append(
-                        (pkmn, mega_info, mega_usage_rate)
+                        (pkmn, mega_info, count)
                     )
 
         return mega_formes_to_select_from

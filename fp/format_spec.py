@@ -35,6 +35,10 @@ class FormatSpec:
         if self.blitz:
             return self.full_name[: -len("blitz")]
         return self.full_name
+    
+    @property
+    def mega_availability(self) -> str:
+        return "champions" if self.champions else "legacy"
 
     @classmethod
     def from_format_string(cls, format_string: str) -> "FormatSpec":

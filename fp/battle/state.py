@@ -1,6 +1,8 @@
 from collections import defaultdict
 from collections import namedtuple
 
+import poke_engine
+
 from fp import constants
 import logging
 
@@ -234,12 +236,12 @@ class Battler:
     def num_revealed_pkmn(self) -> int:
         return len([p for p in [self.active] + self.reserve if p.revealed])
 
-    def possible_mega_evolutions(self, must_be_revealed=False):
+    def possible_mega_evolutions(self, mega_availability: str, must_be_revealed=False):
         result = {}
         for pkmn in self.reserve + [self.active]:
             if must_be_revealed and not pkmn.revealed:
                 continue
-            megas_possible = pkmn.get_mega_pkmn_info()
+            megas_possible = pkmn.get_mega_pkmn_info(mega_availability)
             for m in megas_possible:
                 if pkmn.hp and (
                     pkmn.item == constants.UNKNOWN_ITEM or pkmn.item == m[1]
@@ -675,7 +677,7 @@ class Pokemon:
         pokedex_data = pokedex[self.name]
         return normalize_name(pokedex_data.get("baseSpecies", self.name))
 
-    def get_mega_pkmn_info(self) -> list[tuple[str, str]]:
+    def get_mega_pkmn_info(self, mega_availability: str) -> list[tuple[str, str]]:
         mega_names = []
         if self.name == "rayquaza":
             return [("rayquaza", "none")]
@@ -689,6 +691,9 @@ class Pokemon:
         ]
         for mega_forme in potential_megas:
             if mega_forme in pokedex:
+                if not poke_engine.is_mega_available(mega_forme, mega_availability):
+                    continue
+                
                 mega_names.append(
                     (
                         mega_forme,

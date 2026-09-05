@@ -15,3 +15,4 @@ fp/data/pkmn_sets_cache
 fp/data/local_data
 run_forever.sh
 run.bat
+fp/teams/create_teams.py

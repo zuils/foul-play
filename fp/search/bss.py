@@ -33,8 +33,8 @@ def calculate_opponent_team_preview_preferences(
     return dict(pkmn_scores)
 
 
-def sample_pkmn_to_remove(battler: Battler, affinities: dict[str, float]):
-    can_mega_evo = [k for k in battler.possible_mega_evolutions().keys()]
+def sample_pkmn_to_remove(battler: Battler, affinities: dict[str, float], mega_availability: str):
+    can_mega_evo = [k for k in battler.possible_mega_evolutions(mega_availability).keys()]
     pkmn_list = battler.reserve
     pkmn_to_sample_from = (
         # unrevealed mega. A mega would've been sampled already
@@ -57,7 +57,7 @@ def prepare_post_team_preview_bss_battles(
 
         while len(battle_copy.opponent.reserve) > 2:
             pkmn = sample_pkmn_to_remove(
-                battle_copy.opponent, battle.opponent_team_preview_affinities
+                battle_copy.opponent, battle.opponent_team_preview_affinities, battle.format_spec.mega_availability
             )
             battle_copy.opponent.reserve.remove(pkmn)
         assert len(battle_copy.opponent.reserve) == 2

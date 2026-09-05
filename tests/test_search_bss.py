@@ -45,7 +45,7 @@ class TestSamplePkmnToRemove:
 
         affinities = {"kingambit": 1.0, "dragapult": 1.0}
         for _ in range(20):
-            assert sample_pkmn_to_remove(battler, affinities) is unrevealed
+            assert sample_pkmn_to_remove(battler, affinities, "legacy") is unrevealed
 
 
 class TestPreparePostTeamPreviewBssBattles:

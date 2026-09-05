@@ -25,7 +25,7 @@ class BSSMode(StandardBattleMode):
         # we go back to the base logic where an unrevealed pkmn can be sampled too
 
         battler = battle.opponent
-        mega_formes = battler.possible_mega_evolutions(must_be_revealed=True)
+        mega_formes = battler.possible_mega_evolutions(battle.format_spec.mega_availability, must_be_revealed=True)
         mega_formes_to_select_from = []
         for pkmn, possible_mega_evos in mega_formes.items():
             for mega_info in possible_mega_evos:
