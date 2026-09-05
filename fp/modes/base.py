@@ -198,7 +198,7 @@ def format_decision(battle, decision):
         if tera:
             message = "{} {}".format(message, constants.TERASTALLIZE)
 
-        if zmove or battle.user.active.get_move(decision).can_z:
+        if zmove:
             message = "{} {}".format(message, constants.ZMOVE)
 
     return [message, str(battle.rqid)]

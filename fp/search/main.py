@@ -16,6 +16,11 @@ logger = logging.getLogger(__name__)
 def select_move_from_mcts_results(mcts_results: list[(MctsResult, float, int)]) -> str:
     final_policy = {}
     for mcts_result, sample_chance, index in mcts_results:
+        logger.info(
+            f"MCTS ROOT RESULT {index}: "
+            f"{[(x.move_choice, x.visits, x.total_score / x.visits if x.visits else None) for x in mcts_result.side_one]}"
+        )
+        
         this_policy = max(mcts_result.side_one, key=lambda x: x.visits)
         logger.info(
             "Policy {}: {} visited {}% avg_score={} sample_chance_multiplier={}".format(
@@ -32,6 +37,10 @@ def select_move_from_mcts_results(mcts_results: list[(MctsResult, float, int)]) 
             ) + (sample_chance * (s1_option.visits / mcts_result.total_visits))
 
     final_policy = sorted(final_policy.items(), key=lambda x: x[1], reverse=True)
+    
+    logger.info("ALL AGGREGATED CHOICES:")
+    for move, policy in final_policy:
+        logger.info(f"\t{policy * 100:.3f}%: {move}")
 
     # Consider all moves that are close to the best move
     highest_percentage = final_policy[0][1]
@@ -52,6 +61,19 @@ def get_result_from_mcts(
 
     res = monte_carlo_tree_search(poke_engine_state, search_time_ms, threads=threads)
     logger.info("Iterations {}: {}".format(index, res.total_visits))
+    
+    poke_engine_state = PokeEngineState.from_string(state)
+
+    active_index = int(poke_engine_state.side_one.active_index)
+    active = poke_engine_state.side_one.pokemon[active_index]
+
+    logger.info(
+        f"MCTS Z DEBUG: allow={poke_engine_state.side_one.allow_z_moves} "
+        f"used={poke_engine_state.side_one.z_move_used} "
+        f"active_index={active_index} "
+        f"item={active.item}"
+    )
+    
     return res
 
 
@@ -71,9 +93,21 @@ def find_best_move(battle: Battle) -> str:
     with ProcessPoolExecutor(max_workers=FoulPlayConfig.parallelism) as executor:
         futures = []
         for index, (b, chance) in enumerate(battles):
+            state = battle_to_poke_engine_state(b)
+
+            logger.info(
+                f"ENGINE Z DEBUG: allow={state.side_one.allow_z_moves} "
+                f"used={state.side_one.z_move_used} "
+                f"active_index={state.side_one.active_index} "
+                f"item={state.side_one.pokemon[int(state.side_one.active_index)].item} "
+                f"moves={[(m.id, m.pp) for m in state.side_one.pokemon[int(state.side_one.active_index)].moves]}"
+            )
+
+            serialized = state.to_string()
+            
             fut = executor.submit(
                 get_result_from_mcts,
-                battle_to_poke_engine_state(b).to_string(),
+                serialized, 
                 search_time_per_battle,
                 index,
                 FoulPlayConfig.search_threads,
