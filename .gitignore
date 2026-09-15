@@ -9,6 +9,7 @@ creds
 *.xlsx
 *.txt
 suspect_decisions.py
+fp/teams/create_teams.py
 fp/teams/teams
 fp/data/smogon_stats_cache
 fp/data/pkmn_sets_cache
